@@ -1,14 +1,17 @@
-from flask import Flask, Response # type: ignore
-import pandas as pd # type: ignore
-import numpy as np # type: ignore
-import matplotlib.pyplot as plt # type: ignore
-from sklearn.linear_model import LinearRegression # type: ignore
-from sklearn.model_selection import train_test_split # type: ignore
-import io
+from flask import Flask, render_template
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+import os
 
 app = Flask(__name__)
 
-@app.route('/', methods=['GET', 'POST'])
+# Ensure the static directory exists for storing images
+os.makedirs('static', exist_ok=True)
+
+@app.route('/')
 def index():
     # Load and preprocess the data
     path = '/Users/mritunjaymukherjee/Downloads/population.csv'
@@ -40,7 +43,7 @@ def index():
     country_data = data[data['coa_name'] == country_name]
 
     if country_data.empty:
-        return "No data found for the country: Sudan"
+        return render_template('index.html', image_url=None, message="No data found for Sudan")
 
     X = country_data[['year']].values
     y = country_data['refugees'].values
@@ -62,14 +65,13 @@ def index():
     plt.legend()
     plt.grid()
 
-    # Save plot to a buffer
-    buf = io.BytesIO()
-    plt.savefig(buf, format='png')
-    buf.seek(0)
+    # Save plot to static directory
+    image_path = os.path.join('static', 'refugee_prediction.png')
+    plt.savefig(image_path)
     plt.close()
 
-    # Return the image directly
-    return Response(buf, mimetype='image/png')
+    # Render the image in the template
+    return render_template('index.html', image_url=image_path, message=None)
 
 if __name__ == '__main__':
     app.run(debug=True)
